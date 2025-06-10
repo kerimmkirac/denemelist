@@ -1,64 +1,65 @@
-name: RUN SCRIPT LISTA
+name: proxy
+
 on:
   schedule:
-    - cron: '0 */2 * * *'  # Esegui ogni 2 ore
-  workflow_dispatch:  # Consente l'esecuzione manuale
+    - cron: '0 */2 * * *'  # Her 2 saatte bir çalıştır
+  workflow_dispatch:  # Manuel çalıştırmaya izin ver
 
 jobs:
-  extract-data:
+ extract-data:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repository
+      - name: Depoyu klonla
         uses: actions/checkout@v4
       
-      - name: Set up Python
+      - name: Python'u kur
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
       
-      - name: Install dependencies
+      - name: Bağımlılıkları yükle
         run: |
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 lxml playwright bs4 rapidfuzz fuzzywuzzy python-Levenshtein python-dateutil python-dotenv selenium webdriver-manager pillow
           playwright install 
 
-      - name: Run Script
+      - name: Betiği çalıştır
         run: |
           if [ -f .env ]; then
             export $(grep -v '^#' .env | xargs)
           else
-            echo ".env file not found. Assicurati che esista nel repository."
+            echo ".env dosyası bulunamadı. Depoda mevcut olduğundan emin olun."
             exit 1
           fi
           
           if [ -z "${LISTA}" ]; then
-            echo "La variabile LISTA non è impostata. Controlla il tuo file .env."
+            echo "LISTA değişkeni tanımlı değil. .env dosyanızı kontrol edin."
             exit 1
           fi
           
           python "${LISTA}.py"
       
-      - name: Configura Git
+      - name: Git yapılandırmasını ayarla
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-      - name: Stash delle modifiche locali (se presenti)
+      - name: Yerel değişiklikleri sakla (varsa)
         run: |
           git diff --quiet || git stash
 
-      - name: Scarica le ultime modifiche dal repository remoto
+      - name: Uzaktaki depodan son değişiklikleri indir
         run: git pull --rebase origin main
 
-      - name: Ripristina le modifiche stashed (se presenti)
+      - name: Saklanan değişiklikleri geri yükle (varsa)
         run: |
-          git stash list | grep -q "stash@{0}" && git stash pop || echo "Nessuna modifica da ripristinare"
+          git stash list | grep -q "stash@{0}" && git stash pop || echo "Geri yüklenecek değişiklik yok"
 
-      - name: Aggiungi il file generato al commit
+      - name: Oluşturulan dosyayı commite ekle
         run: |
           git add .
-          git commit -m "UPDATE" || echo "Nessuna modifica da commitare"
+          git commit -m "GÜNCELLEME" || echo "Commitlenecek değişiklik yok"
 
-      - name: Pusha il cambiamento
+      - name: Değişiklikleri gönder (push)
         run: git push
